@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  capstone-frontend:
+    build: 
+      context: frontend
+      dockerfile: Dockerfile_new
+    image: capstone-frontend:latest
+    ports:
+      - 5000:5000
+    environment:
+      COUNTER_SERVICE_URL: http://capstone-backend:5000
+  capstone-backend:
+    build:
+      context: backend
+      dockerfile: Dockerfile_new
+    image: capstone-backend:latest
+  jaegertracing:
+    image: jaegertracing/all-in-one
+    ports:
+      - 16686:16686
+      - 14268:14268

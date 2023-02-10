@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  capstone-frontend:
+    build: ./frontend
+    image: capstone-frontend:v1
+    ports:
+      - 5000:5000
+    environment:
+      COUNTER_SERVICE_URL: http://capstone-backend:5000
+  capstone-backend:
+    build: ./backend
+    image: capstone-backend:v1
+    

@@ -1,0 +1,9 @@
+FROM python:3.11.1-bullseye
+WORKDIR /src
+COPY . .
+RUN apt update
+RUN pip install -r requirements_new.txt
+RUN opentelemetry-bootstrap -a install
+EXPOSE 5000
+#CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["opentelemetry-instrument", "--service_name", "capstone-backend",  "flask", "run", "--host=0.0.0.0"]

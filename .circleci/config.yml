@@ -1,0 +1,108 @@
+version: 2.1
+
+commands:
+  destroy_environment:
+    description: destroys cluster on fail
+    steps:
+      - run:
+          name: destroy cluster
+          when: on_fail
+          command: |
+            eksctl delete cluster --name=capstone-cluster
+
+jobs:
+  lint_checks:
+    docker:
+      - image: python:3.11.1-bullseye
+    steps:
+      - checkout
+      - run: 
+          name: install python requirements
+          command: make install
+      - run:
+          name: Install hadolint
+          command: | 
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
+            chmod +x /bin/hadolint
+      - run:
+          name: lint cheks
+          command: make lint
+  build_and_push_image:
+    docker:
+      - image: cimg/base:stable
+        auth:
+          username: divyavan
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.14
+      - run:
+          name:
+          command: |
+            docker version
+            docker build -t capstone .
+            docker image ls
+            echo $DOCKER_ACCESS_KEY | docker login -u divyavan --password-stdin
+            dockerpath=divyavan/capstone:latest
+            docker image tag capstone:latest $dockerpath
+            docker push $dockerpath
+  create_cluster_and_deploy_app:
+    docker:
+      - image: cimg/aws:2022.06.1
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: create cluster
+          command: |
+            chmod +x create_cluster.sh
+            ./create_cluster.sh
+            eksctl utils write-kubeconfig --cluster=capstone-cluster
+      - run:
+          name: kubectl deployments
+          command: |
+            chmod +x kubernetes_deploy.sh
+            bash kubernetes_deploy.sh
+      - run:
+          name: get info about kubernetes objects
+          command: |
+            kubectl get nodes
+            kubectl get pods
+            kubectl get deployments
+            kubectl get services
+      - run:
+          name: kubectl port-forward and run tests
+          command: |
+            kubectl port-forward services/capstone-service 5000:5000 &
+            sleep 2
+            ps aux
+            out=$(curl -s http://localhost:5000)
+            echo $out
+            if [[ $out == "Hello, world" ]]; then echo "passed"; else echo "failed" && exit 1; fi
+      #- destroy_environment
+workflows:
+  default:
+    jobs:
+      - lint_checks
+      - build_and_push_image:
+          requires: [lint_checks]
+      - create_cluster_and_deploy_app:
+          requires: [build_and_push_image]
