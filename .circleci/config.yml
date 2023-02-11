@@ -154,6 +154,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: install envsubst
+          command: |
+            sudo apt update && sudo apt install gettext-base
+      - run:
           name: parameter testing
           command: |
             export VERSION=<< parameters.app_version >>
@@ -168,6 +172,10 @@ jobs:
         default: v0      
     steps:
       - checkout
+      - run:
+          name: install envsubst
+          command: |
+            sudo apt update && sudo apt install gettext-base
       - run:
           name: parameter testing
           command: |
