@@ -156,7 +156,6 @@ jobs:
       - run:
           name: parameter testing
           command: |
-            cd frontend
             export VERSION=<< parameters.app_version >>
             envsubst < frontend-deployment.yaml > fe-dep.yaml
             cat fe-dep.yaml
@@ -172,7 +171,6 @@ jobs:
       - run:
           name: parameter testing
           command: |
-            cd backend
             export VERSION=<< parameters.app_version >>
             envsubst < backend-deployment.yaml > be-dep.yaml
             cat be-dep.yaml
