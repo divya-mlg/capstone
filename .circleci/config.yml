@@ -156,7 +156,7 @@ jobs:
       - run:
           name: install envsubst
           command: |
-            sudo apt update
+            sudo apt update || true
             sudo apt install gettext-base
       - run:
           name: parameter testing
@@ -176,7 +176,7 @@ jobs:
       - run:
           name: install envsubst
           command: |
-            sudo apt update
+            sudo apt update || true
             sudo apt install gettext-base
       - run:
           name: parameter testing
