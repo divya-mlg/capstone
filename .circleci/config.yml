@@ -163,6 +163,10 @@ jobs:
   deploy-backend:
     docker:
       - image: cimg/aws:2022.06.1
+    parameters:
+      app_version:
+        type: string
+        default: v0      
     steps:
       - checkout
       - run:
