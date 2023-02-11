@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-frontend
+  labels:
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: ${VERSION}
+    spec:
+      containers:
+        - name: capstone-fe
+          image: divyavan/capstone-frontend:${VERSION}
+          env:
+            - name: COUNTER_SERVICE_URL
+              value:  http://capstone-backend:5000
+          ports:
+            - containerPort: 5000
