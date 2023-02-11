@@ -28,7 +28,9 @@ jobs:
             chmod +x /bin/hadolint
       - run:
           name: lint checks
-          command: make lint
+          command: | 
+            cd frontend
+            make lint
   backend-lint-checks:
     docker:
       - image: python:3.11.1-bullseye
@@ -46,7 +48,9 @@ jobs:
             chmod +x /bin/hadolint
       - run:
           name: lint checks
-          command: make lint
+          command: |
+            cd backend
+            make lint
   build-frontend:
     docker:
       - image: cimg/base:stable
