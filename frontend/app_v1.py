@@ -5,11 +5,11 @@ import os
 app = Flask(__name__)
 
 def get_counter(endpoint):
-    resp = requests.get(endpoint)
+    resp = requests.get(endpoint, timeout=5)
     return resp.text
 
 def update_counter(endpoint):
-    resp = requests.post(endpoint)
+    resp = requests.post(endpoint, timeout=5)
     return resp.text
 
 @app.route('/')

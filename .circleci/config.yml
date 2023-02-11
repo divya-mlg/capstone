@@ -11,23 +11,43 @@ commands:
             eksctl delete cluster --name=capstone-cluster
 
 jobs:
-  lint_checks:
+  frontend-lint-checks:
     docker:
       - image: python:3.11.1-bullseye
     steps:
       - checkout
       - run: 
           name: install python requirements
-          command: make install
+          command: |
+            cd frontend
+            make install
       - run:
           name: Install hadolint
           command: | 
             wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
             chmod +x /bin/hadolint
       - run:
-          name: lint cheks
+          name: lint checks
           command: make lint
-  build_and_push_image:
+  backend-lint-checks:
+    docker:
+      - image: python:3.11.1-bullseye
+    steps:
+      - checkout
+      - run: 
+          name: install python requirements
+          command: |
+            cd backend
+            make install
+      - run:
+          name: Install hadolint
+          command: | 
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
+            chmod +x /bin/hadolint
+      - run:
+          name: lint checks
+          command: make lint
+  build-frontend:
     docker:
       - image: cimg/base:stable
         auth:
@@ -40,14 +60,36 @@ jobs:
       - run:
           name:
           command: |
+            cd frontend
             docker version
-            docker build -t capstone .
+            docker build -t capstone-frontend:v1 .
             docker image ls
             echo $DOCKER_ACCESS_KEY | docker login -u divyavan --password-stdin
-            dockerpath=divyavan/capstone:latest
-            docker image tag capstone:latest $dockerpath
+            dockerpath=divyavan/capstone-frontend:v1
+            docker image tag capstone-frontend:v1 $dockerpath
             docker push $dockerpath
-  create_cluster_and_deploy_app:
+  build-backend:
+    docker:
+      - image: cimg/base:stable
+        auth:
+          username: divyavan
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.14
+      - run:
+          name:
+          command: |
+            cd backend
+            docker version
+            docker build -t capstone-backend:v1 .
+            docker image ls
+            echo $DOCKER_ACCESS_KEY | docker login -u divyavan --password-stdin
+            dockerpath=divyavan/capstone-backend:v1
+            docker image tag capstone-backend:v1 $dockerpath
+            docker push $dockerpath
+create_cluster_and_deploy_app:
     docker:
       - image: cimg/aws:2022.06.1
     steps:
@@ -101,8 +143,11 @@ jobs:
 workflows:
   default:
     jobs:
-      - lint_checks
-      - build_and_push_image:
-          requires: [lint_checks]
-      - create_cluster_and_deploy_app:
-          requires: [build_and_push_image]
+      - frontend-lint-checks
+      - backend-lint-checks
+      - build-frontend:
+          requires: [frontend-lint-checks]
+      - build-backend:
+          requires: [backend-lint-checks]
+      #- create_cluster_and_deploy_app:
+      #    requires: [build_and_push_image]

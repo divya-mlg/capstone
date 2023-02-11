@@ -34,11 +34,11 @@ trace.get_tracer_provider().add_span_processor(span_processor)
 app = Flask(__name__)
 
 def get_counter(endpoint):
-    resp = requests.get(endpoint)
+    resp = requests.get(endpoint, timeout=5)
     return resp.text
 
 def update_counter(endpoint):
-    resp = requests.post(endpoint)
+    resp = requests.post(endpoint, timeout=5)
     return resp.text
 
 @app.route('/')
@@ -51,7 +51,7 @@ def index_handler():
         output = "Hello, you are visior number " + str(counter)
         output = "app-version=v2, page-counter=" + str(counter) + ", new-features=tracing"
         span.set_attribute("counter", counter)
-        span-set_attribute("app-version", "v2")
+        span.set_attribute("app-version", "v2")
         return output
 
 if __name__ == '__main__':

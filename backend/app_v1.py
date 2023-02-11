@@ -6,7 +6,6 @@ app = Flask(__name__)
 counter_val = 1
 
 def get_counter():
-    global counter_val
     return str(counter_val)
 
 def increment_counter():
