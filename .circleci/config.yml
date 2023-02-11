@@ -144,34 +144,34 @@ create_cluster_and_deploy_app:
             echo $out
             if [[ $out == "Hello, world" ]]; then echo "passed"; else echo "failed" && exit 1; fi
       #- destroy_environment
-  deploy-frontend:
-    docker:
-      - image: cimg/aws:2022.06.1
-    parameters:
-      app_version:
-        type: string
-        default: v0
-    steps:
-      - checkout
-      - run:
-          name: parameter testing
-          command: |
-            cd frontend
-            export VERSION=<< parameters.app_version >>
-            envsubst < frontend-deployment.yaml > fe-dep.yaml
-            cat fe-dep.yaml
-  deploy-backend:
-    docker:
-      - image: cimg/aws:2022.06.1
-    steps:
-      - checkout
-      - run:
-          name: parameter testing
-          command: |
-            cd backend
-            export VERSION=<< parameters.app_version >>
-            envsubst < backend-deployment.yaml > be-dep.yaml
-            cat be-dep.yaml
+deploy-frontend:
+  docker:
+    - image: cimg/aws:2022.06.1
+  parameters:
+    app_version:
+      type: string
+      default: v0
+  steps:
+    - checkout
+    - run:
+        name: parameter testing
+        command: |
+          cd frontend
+          export VERSION=<< parameters.app_version >>
+          envsubst < frontend-deployment.yaml > fe-dep.yaml
+          cat fe-dep.yaml
+deploy-backend:
+  docker:
+    - image: cimg/aws:2022.06.1
+  steps:
+    - checkout
+    - run:
+        name: parameter testing
+        command: |
+          cd backend
+          export VERSION=<< parameters.app_version >>
+          envsubst < backend-deployment.yaml > be-dep.yaml
+          cat be-dep.yaml
 workflows:
   default:
     jobs:
