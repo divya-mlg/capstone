@@ -210,7 +210,7 @@ jobs:
             sudo apt update || true
             sudo apt install gettext-base
       - run:
-          name: parameter testing
+          name: deploying frontend
           command: |
             export VERSION=<< parameters.app_version >>
             envsubst < frontend-deployment.yml > fe-dep.yml
@@ -254,7 +254,7 @@ jobs:
             sudo apt update || true
             sudo apt install gettext-base
       - run:
-          name: parameter testing
+          name: deploying backend
           command: |
             export VERSION=<< parameters.app_version >>
             envsubst < backend-deployment.yml > be-dep.yml
@@ -334,9 +334,9 @@ jobs:
             echo "sending a request to the frontend"
             out=$(curl -s http://localhost:5000)
             echo $out
-            appinfo = out | cut -d"," -f1
+            appinfo=$(echo $out | cut -d"," -f1)
             if [[ $appinfo == "app-version=v1" ]]; then echo "app version info check passed"; else echo "app version info check failed" && exit 1; fi
-            pageinfo = out | cut -d"," -f2
+            pageinfo=$(echo $out | cut -d"," -f2)
             if [[ $pageinfo =~ page-counter.* ]]; then echo "page counter check passed"; else echo "page counter check failed"; fi
 workflows:
   default:
