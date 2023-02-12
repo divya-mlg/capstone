@@ -261,7 +261,7 @@ jobs:
             cat be-dep.yml
             kubectl apply -f be-dep.yml
             kubectl apply -f backend-service.yml
-  print-cube-resources:
+  print-kube-resources:
     docker:
       - image: cimg/aws:2022.06.1
     steps:
