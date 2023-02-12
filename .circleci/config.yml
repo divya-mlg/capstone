@@ -216,6 +216,8 @@ jobs:
             envsubst < frontend-deployment.yml > fe-dep.yml
             cat fe-dep.yml
             kubectl apply -f fe-dep.yml
+            chmod +x check_deployment_status.sh
+            bash check_deployment_status.sh capstone-frontend            
             kubectl apply -f frontend-service.yml
   deploy-backend:
     docker:
@@ -260,7 +262,77 @@ jobs:
             envsubst < backend-deployment.yml > be-dep.yml
             cat be-dep.yml
             kubectl apply -f be-dep.yml
+            chmod +x check_deployment_status.sh
+            bash check_deployment_status.sh capstone-backend
             kubectl apply -f backend-service.yml
+  deploy-redis:
+    docker:
+      - image: redis:7.0-bullseye
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster      
+      - run:
+          name: deploying redis
+          command: |
+            kubectl apply -f redis-deployment.yml
+            chmod +x check_deployment_status.sh
+            bash check_deployment_status.sh capstone-redis
+            kubectl apply -f redis-service.yml
+  deploy-jaeger:
+    docker:
+      - image: redis:7.0-bullseye
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster      
+      - run:
+          name: deploying jaeger
+          command: |
+            kubectl apply -f jaeger-deployment.yml
+            chmod +x check_deployment_status.sh
+            bash check_deployment_status.sh capstone-jaeger
+            kubectl apply -f jaeger-service.yml           
   print-kube-resources:
     docker:
       - image: cimg/aws:2022.06.1
@@ -295,6 +367,8 @@ jobs:
             kubectl get pods -l app=frontend --show-labels
             echo "printing backend pods"
             kubectl get pods -l app=backend --show-labels
+            echo "printing redis pods"
+            kubectl get pods -l app=redis --show-labels
             echo "printing services created"
             kubectl get svc -o wide
   test-deployment:
@@ -349,12 +423,14 @@ workflows:
           requires: [backend-lint-checks]
       - create-infra:
           requires: [build-frontend, build-backend]
+      - deploy-redis:
+          requires: [create-infra]          
       - deploy-frontend:
           app_version: v1
           requires: [create-infra]
       - deploy-backend:
           app_version: v1
-          requires: [create-infra]
+          requires: [create-infra, deploy-redis]
       - print-kube-resources:
           requires: [deploy-frontend, deploy-backend]
       - test-deployment:
