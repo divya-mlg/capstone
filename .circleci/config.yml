@@ -144,6 +144,35 @@ jobs:
             echo $out
             if [[ $out == "Hello, world" ]]; then echo "passed"; else echo "failed" && exit 1; fi
       #- destroy_environment
+  create-infra:
+    docker:
+      - image: cimg/aws:2022.06.1
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: create cluster
+          command: |
+            chmod +x create_cluster.sh
+            ./create_cluster.sh
+            eksctl utils write-kubeconfig --cluster=capstone-cluster      
   deploy-frontend:
     docker:
       - image: cimg/aws:2022.06.1
@@ -154,6 +183,28 @@ jobs:
     steps:
       - checkout
       - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster 
+      - run:
           name: install envsubst
           command: |
             sudo apt update || true
@@ -162,8 +213,10 @@ jobs:
           name: parameter testing
           command: |
             export VERSION=<< parameters.app_version >>
-            envsubst < frontend-deployment.yml > fe-dep.yaml
-            cat fe-dep.yaml
+            envsubst < frontend-deployment.yml > fe-dep.yml
+            cat fe-dep.yml
+            kubectl apply -f fe-dep.yml
+            kubectl apply -f frontend-service.yml
   deploy-backend:
     docker:
       - image: cimg/aws:2022.06.1
@@ -174,6 +227,28 @@ jobs:
     steps:
       - checkout
       - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster      
+      - run:
           name: install envsubst
           command: |
             sudo apt update || true
@@ -182,8 +257,87 @@ jobs:
           name: parameter testing
           command: |
             export VERSION=<< parameters.app_version >>
-            envsubst < backend-deployment.yml > be-dep.yaml
-            cat be-dep.yaml
+            envsubst < backend-deployment.yml > be-dep.yml
+            cat be-dep.yml
+            kubectl apply -f be-dep.yml
+            kubectl apply -f backend-service.yml
+  print-cube-resources:
+    docker:
+      - image: cimg/aws:2022.06.1
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster
+      - run:
+          name: print kubernetes resources created
+          command: |
+            echo "printing frontend pods:"
+            kubectl get pods -l app=frontend --show-labels
+            echo "printing backend pods"
+            kubectl get pods -l app=backend --show-labels
+            echo "printing services created"
+            kubectl get svc -o wide
+  test-deployment:
+    docker:
+      - image: cimg/aws:2022.06.1
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster
+      - run:
+          name: send a request to frontend and verify page counter received
+          command: |
+            echo "running kubectl port-forward"
+            kubectl port-forward services/capstone-frontend 5000:5000 &
+            sleep 1
+            ps aux
+            echo "sending a request to the frontend"
+            out=$(curl -s http://localhost:5000)
+            echo $out
+            appinfo = out | cut -d"," -f1
+            if [[ $appinfo == "app-version=v1" ]]; then echo "app version info check passed"; else echo "app version info check failed" && exit 1; fi
+            pageinfo = out | cut -d"," -f2
+            if [[ $pageinfo =~ page-counter.* ]]; then echo "page counter check passed"; else echo "page counter check failed"; fi
 workflows:
   default:
     jobs:
@@ -193,9 +347,17 @@ workflows:
           requires: [frontend-lint-checks]
       - build-backend:
           requires: [backend-lint-checks]
+      - create-infra:
+          requires: [build-frontend, build-backend]
       - deploy-frontend:
           app_version: v1
+          requires: [create-infra]
       - deploy-backend:
-          app_version: v2
+          app_version: v1
+          requires: [create-infra]
+      - print-kube-resources:
+          requires: [deploy-frontend, deploy-backend]
+      - test-deployment:
+          requires: [deploy-frontend, deploy-backend]
       #- create_cluster_and_deploy_app:
       #    requires: [build_and_push_image]
