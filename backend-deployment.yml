@@ -15,7 +15,10 @@ spec:
         version: ${VERSION}
     spec:
       containers:
-        - name: capstone-fe
+        - name: capstone-be
           image: divyavan/capstone-backend:${VERSION}
+          env:
+            - name: REDIS_FROM_URL
+              value:  redis://capstone-redis:6379
           ports:
             - containerPort: 5000
