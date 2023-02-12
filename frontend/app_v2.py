@@ -45,7 +45,7 @@ def update_counter(endpoint):
 def index_handler():
     counter_service_url = os.environ.get('COUNTER_SERVICE_URL')
     counter_service_endpoint = counter_service_url+"/api/counter"
-    with tracer.start_as_current_span("hello_world") as span:
+    with tracer.start_as_current_span("index_handler") as span:
         counter = get_counter(counter_service_endpoint)
         update_counter(counter_service_endpoint)
         output = "Hello, you are visior number " + str(counter)
