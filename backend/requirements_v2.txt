@@ -1,4 +1,5 @@
 astroid==2.14.1
+async-timeout==4.0.2
 backoff==2.2.1
 certifi==2022.12.7
 charset-normalizer==3.0.1
@@ -43,6 +44,7 @@ opentelemetry-util-http==0.36b0
 platformdirs==3.0.0
 protobuf==3.20.3
 pylint==2.16.1
+redis==4.5.1
 requests==2.28.2
 six==1.16.0
 thrift==0.16.0

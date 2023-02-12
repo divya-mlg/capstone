@@ -10,4 +10,8 @@ services:
   capstone-backend:
     build: ./backend
     image: capstone-backend:v1
+    environment:
+      REDIS_FROM_URL: redis://capstone-redis:6379
+  capstone-redis:
+    image: redis:7.0-bullseye
     

@@ -3,7 +3,7 @@ services:
   capstone-frontend:
     build: 
       context: frontend
-      dockerfile: Dockerfile_new
+      dockerfile: Dockerfile_v2
     image: capstone-frontend:latest
     ports:
       - 5000:5000
@@ -12,8 +12,12 @@ services:
   capstone-backend:
     build:
       context: backend
-      dockerfile: Dockerfile_new
+      dockerfile: Dockerfile_v2
     image: capstone-backend:latest
+    environment:
+      REDIS_FROM_URL: redis://capstone-redis:6379
+  capstone-redis:
+    image: redis:7.0-bullseye
   jaegertracing:
     image: jaegertracing/all-in-one
     ports:
