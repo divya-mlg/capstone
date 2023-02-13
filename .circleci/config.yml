@@ -550,7 +550,7 @@ jobs:
             kubectl apply -f be-dep.yml
             chmod +x check_deployment_status.sh
             bash check_deployment_status.sh capstone-backend
-  test-deployment:
+  test-updated-deployment:
     docker:
       - image: cimg/aws:2022.06.1
     steps:
