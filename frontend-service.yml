@@ -3,9 +3,9 @@ kind: Service
 metadata:
   name: capstone-frontend
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
-    app: LoadBalancer
+    app: frontend
   ports:
     - protocol: TCP
       port: 5000
