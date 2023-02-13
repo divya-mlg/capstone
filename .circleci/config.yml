@@ -504,8 +504,7 @@ jobs:
             cat fe-dep.yml
             kubectl apply -f fe-dep.yml
             chmod +x check_deployment_status.sh
-            bash check_deployment_status.sh capstone-frontend            
-            kubectl apply -f frontend-service.yml
+            bash check_deployment_status.sh capstone-frontend
   deploy-new-backend:
     docker:
       - image: cimg/aws:2022.06.1
@@ -551,7 +550,49 @@ jobs:
             kubectl apply -f be-dep.yml
             chmod +x check_deployment_status.sh
             bash check_deployment_status.sh capstone-backend
-            kubectl apply -f backend-service.yml
+  test-deployment:
+    docker:
+      - image: cimg/aws:2022.06.1
+    steps:
+      - checkout
+      - run:
+          name: install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+      - run:
+          name: install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin
+      - run:
+          name: configure aws cli
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: write kubeconfig file
+          command: |
+            eksctl utils write-kubeconfig --cluster=capstone-cluster
+      - run:
+          name: send a request to frontend and verify page counter and new-features info is received
+          command: |
+            echo "running kubectl port-forward"
+            kubectl port-forward services/capstone-frontend 5000:5000 &
+            sleep 1
+            ps aux
+            echo "sending a request to the frontend"
+            out=$(curl -s http://localhost:5000)
+            echo $out
+            appinfo=$(echo $out | cut -d"," -f1)
+            if [[ $appinfo == "app-version=v1" ]]; then echo "app version info check passed"; else echo "app version info check failed" && exit 1; fi
+            pageinfo=$(echo $out | cut -d"," -f2)
+            if [[ $pageinfo =~ page-counter.* ]]; then echo "page counter check passed"; else echo "page counter check failed"; fi
+            newfeatures_info=$(echo $out | cut -d"," -f3)
+            if [[ $newfeatures_info =~ "new-features=tracing" ]]; then echo "newfeatures info check passed"; else echo "newfeatures info check failed"; fi
 workflows:
   default:
     jobs:
@@ -581,11 +622,12 @@ workflows:
           requires: [test-deployment]
       - deploy-jaeger:
           requires: [test-deployment]
-      #- deploy-new-frontend:
-      #    app_version: v2      
-      #    requires: [build-new-frontend, deploy-jaeger]
-      #- deploy-new-backend:
-      #    app_version: v2      
-      #    requires: [build-new-backend, deploy-jaeger, deploy-redis]
-      #- create_cluster_and_deploy_app:
-      #    requires: [build_and_push_image]
+      - deploy-new-frontend:
+          app_version: v2      
+          requires: [build-new-frontend, deploy-jaeger]
+      - deploy-new-backend:
+          app_version: v2      
+          requires: [build-new-backend, deploy-jaeger, deploy-redis]
+      - test-updated-deployment:
+          requires: [deploy-new-frontend, deploy-new-backend]
+
