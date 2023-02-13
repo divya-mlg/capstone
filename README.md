@@ -74,6 +74,14 @@ I did not use a `LoadBalancer` but instead created `NodePort` services and used 
 ## IAC (Infrastructure As Code):
 When working with Kubernetes, one can create (or manager) resources declaratively or imperatively. I wanted to use both approaches. So for a few tasks, I used `kubectl` commands directly (imperative approach) and for other tasks I used yaml configurations to describe what is the desired state of the resources.
 
+## Traces collected
+The following are the screenshots that show the different traces emitted by the `frontend` and `backend` services
+![image](tracing-screenshot-1.jpg)
+
+![image](tracing-screenshot-2.jpg)
+
+![image](tracing-screenshot-3.jpg)
+
 ## References
 I am not adding any explicit references, but I like to mention a few things:
 1. Udacity classroom material and Questions forum are very helpful
