@@ -267,7 +267,7 @@ jobs:
             kubectl apply -f backend-service.yml
   deploy-redis:
     docker:
-      - image: redis:7.0-bullseye
+      - image: cimg/aws:2022.06.1
     steps:
       - checkout
       - run:
@@ -301,7 +301,7 @@ jobs:
             kubectl apply -f redis-service.yml
   deploy-jaeger:
     docker:
-      - image: redis:7.0-bullseye
+      - image: cimg/aws:2022.06.1
     steps:
       - checkout
       - run:
