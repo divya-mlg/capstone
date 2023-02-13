@@ -598,5 +598,35 @@ workflows:
     jobs:
       - frontend-lint-checks
       - backend-lint-checks
-
-
+      - build-frontend:
+          requires: [frontend-lint-checks]
+      - build-backend:
+          requires: [backend-lint-checks]
+      - create-infra:
+          requires: [build-frontend, build-backend]
+      - deploy-redis:
+          requires: [create-infra]          
+      - deploy-frontend:
+          app_version: v1
+          requires: [create-infra]
+      - deploy-backend:
+          app_version: v1
+          requires: [create-infra, deploy-redis]
+      - print-kube-resources:
+          requires: [deploy-frontend, deploy-backend]
+      - test-deployment:
+          requires: [deploy-frontend, deploy-backend]
+      - build-new-frontend:
+          requires: [test-deployment]
+      - build-new-backend:
+          requires: [test-deployment]
+      - deploy-jaeger:
+          requires: [test-deployment]
+      - deploy-new-frontend:
+          app_version: v2      
+          requires: [build-new-frontend, deploy-jaeger]
+      - deploy-new-backend:
+          app_version: v2      
+          requires: [build-new-backend, deploy-jaeger, deploy-redis]
+      - test-updated-deployment:
+          requires: [deploy-new-frontend, deploy-new-backend]
